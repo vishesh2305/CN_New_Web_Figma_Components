@@ -14,18 +14,15 @@ export default function EditorLayout() {
 
   return (
     <main className="flex w-full h-screen">
-      {/* Sidebar */}
+  
       {showSidebar && (
         <Sidebar files={files} onClose={() => setShowSidebar(false)} />
       )}
 
-      {/* Code Editor */}
+      
       <div className="flex-1 relative">
         {!showSidebar && (
-          <button
-            onClick={() => setShowSidebar(true)}
-            className=" absolute top-10 right-2 bg-black text-white px-4 py-1 rounded"
-          >
+          <button onClick={() => setShowSidebar(true)} className=" absolute top-10 right-2 bg-black text-white px-4 py-1 rounded">
             ☰
           </button>
         )}

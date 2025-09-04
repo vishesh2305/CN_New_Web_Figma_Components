@@ -13,13 +13,7 @@ export default function CodeEditor() {
         <div className="bg-gray-800 text-white px-4 py-2 font-mono text-sm">
           Code Editor
         </div>
-        <Editor
-          height="calc(100% - 40px)"
-          defaultLanguage="javascript"
-          theme="vs-dark"
-          value={code}
-          onChange={(value) => setCode(value)}
-        />
+        <Editor height="calc(100% - 40px)" defaultLanguage="javascript" theme="vs-dark" value={code} onChange={(value) => setCode(value)}/>
       </div>
 
     
@@ -27,11 +21,8 @@ export default function CodeEditor() {
         <div className="bg-gray-800 text-white px-4 py-2 font-mono text-sm">
           Live Preview
         </div>
-        <iframe
-          title="preview"
-          className="w-full h-[calc(100%-40px)]"
-          sandbox="allow-scripts"
-          srcDoc={`<!DOCTYPE html>
+        <iframe title="preview" className="w-full h-[calc(100%-40px)]" sandbox="allow-scripts"
+         srcDoc={`<!DOCTYPE html>
             <html>
               <head>
                 <style>
