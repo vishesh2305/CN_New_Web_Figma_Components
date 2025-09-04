@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 
-const elevenascii: React.FC = () => {
+const Elevenascii: React.FC = () => {
   const canvasRef = useRef<HTMLPreElement>(null);
   const animationRef = useRef<number | null>(null);
 
@@ -144,4 +144,4 @@ const elevenascii: React.FC = () => {
   );
 };
 
-export default elevenascii;
+export default Elevenascii;

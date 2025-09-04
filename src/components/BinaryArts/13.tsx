@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 
-const thirdteenascii: React.FC = () => {
+const Thirdteenascii: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
@@ -103,13 +103,15 @@ const thirdteenascii: React.FC = () => {
   return (
     <div
       style={{
-        width: "600px",
-        height: "600px",
-        backgroundColor: "#ffffff",
+        margin: "50px auto",
+        background: "#ffffff",
+        overflow: "hidden",
+        fontFamily: "monospace",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        margin: "50px auto",
+        height: "600px",
+        width: "600px", 
         border: "1px solid #ccc",
         borderRadius: "10px",
       }}
@@ -119,4 +121,4 @@ const thirdteenascii: React.FC = () => {
   );
 };
 
-export default thirdteenascii;
+export default Thirdteenascii;

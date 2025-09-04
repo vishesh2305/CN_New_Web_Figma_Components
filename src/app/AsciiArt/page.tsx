@@ -11,24 +11,20 @@ import Seventhascii from "@/components/BinaryArts/7";
 import Eightascii from "@/components/BinaryArts/8";
 import Nineascii from "@/components/BinaryArts/9";
 import Tenthascii from "@/components/BinaryArts/10";
-import elevenascii from "@/components/BinaryArts/11";
-import tweleveascii from "@/components/BinaryArts/12";
-import thirdteenascii from "@/components/BinaryArts/13";
+import Elevenascii from "@/components/BinaryArts/11";
+import Tweleveascii from "@/components/BinaryArts/12";
+import Thirdteenascii from "@/components/BinaryArts/13";
 
 const components = [
-  Oneascii,
-  Twoascii,
-  Threeascii,
-  Fourascii,
-  Fiveascii,
-  Sixascii,
-  Seventhascii,
-  Eightascii,
-  Nineascii,
-  Tenthascii,
-  elevenascii,
-  tweleveascii,
-  thirdteenascii
+  // Oneascii,
+  // Twoascii,
+  // Threeascii,
+  // Fourascii,
+  // Fiveascii,
+  // Sixascii,
+  // Elevenascii,
+  // Tweleveascii,
+  Thirdteenascii
 ];
 
 export default function AsciiArtPage() {

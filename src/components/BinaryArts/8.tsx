@@ -122,20 +122,21 @@ const Eightascii: React.FC = () => {
   }, []);
 
   return (
-    <div
-      ref={mountRef}
-      style={{
-        margin: 0,
-        background: '#FFFFFF',
-        overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '550px',
-        width: '550px',
-        position: 'relative',
-      }}
-    />
+<div
+    ref={mountRef}
+    style={{
+    margin: "50px auto",
+    background: '#FFFFFF',
+    overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '550px',
+    width: '550px',
+    border: "1px solid #ccc",
+    borderRadius: "10px"
+    }}
+/>
   );
 };
 
