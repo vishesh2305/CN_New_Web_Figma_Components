@@ -34,10 +34,6 @@ const Fiveascii: React.FC = () => {
           const x = centerX + (r + wave) * Math.cos(angle);
           const y = centerY + (r + wave) * Math.sin(angle);
 
-          const isYin = angle > Math.PI
-            ? (Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - (centerY + maxRadius / 4), 2)) < maxRadius / 4)
-            : (Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - (centerY - maxRadius / 4), 2)) > maxRadius / 4);
-
           ctx.strokeStyle = '#000000'; 
           ctx.lineTo(x, y);
         }
@@ -62,15 +58,17 @@ const Fiveascii: React.FC = () => {
 
   return (
     <div style={{
-      width: '600px',
-      height: '600px',
-      backgroundColor: '#ffffff', 
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      margin: '50px auto',
-      border: '1px solid #ccc',
-      borderRadius: '10px'
+        margin: "50px auto",
+        background: "#ffffff",
+        overflow: "hidden",
+        fontFamily: "monospace",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "600px",
+        width: "600px", 
+        border: "1px solid #ccc",
+        borderRadius: "10px",
     }}>
       <canvas
         ref={canvasRef}

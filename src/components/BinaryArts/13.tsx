@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 
-const Thirdteenascii: React.FC = () => {
+const Thirteenascii: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
@@ -121,4 +121,4 @@ const Thirdteenascii: React.FC = () => {
   );
 };
 
-export default Thirdteenascii;
+export default Thirteenascii;

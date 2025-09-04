@@ -1,179 +1,235 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import React, { useRef, useEffect } from "react";
+
+interface Vector3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface Vertex {
+  position: Vector3;
+  normal: Vector3;
+  tangent1: Vector3;
+  tangent2: Vector3;
+  theta: number;
+  phi: number;
+  hatchingIntensity: number;
+}
+
+interface ProjectedVertex {
+  x: number;
+  y: number;
+  z: number;
+  vertex: Vertex;
+}
 
 const Seventhascii: React.FC = () => {
-  const mountRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const requestRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const container = mountRef.current;
-    if (!container) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    const dpr = window.devicePixelRatio || 1;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const width = canvas.width;
+    const height = canvas.height;
 
-    renderer.setPixelRatio(Math.min(dpr, 2));
-    renderer.setSize(width, height);
-    renderer.setClearColor(0xffffff);
-    container.appendChild(renderer.domElement);
+    ctx.fillStyle = "#F0EEE6";
+    ctx.fillRect(0, 0, width, height);
 
-    const ambientLight = new THREE.AmbientLight(0x404040);
-    const directionalLight = new THREE.DirectionalLight(0x808080, 1);
-    directionalLight.position.set(1, 1, 1);
-    scene.add(ambientLight, directionalLight);
+    const centerX = width / 2;
+    const centerY = height / 2;
 
-    const material = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.6 });
+    let time = 50;
+    const timeStep = 0.004;
 
-    const createSatelliteDish = (): THREE.Group => {
-      const group = new THREE.Group();
+    const baseForm = {
+      majorRadius: 80,
+      minorRadius: 30,
+      complexity: 0.8,
+      resolution: 36,
+    };
 
-      const dishGeometry = new THREE.BufferGeometry();
-      const dishVertices: number[] = [];
-      const rings = 12;
-      const segments = 16;
-      const radius = 6;
+    let cachedVertices: Vertex[] | null = null;
+    let lastCacheTime = -1;
+    const cacheLifetime = 0.1;
 
-      for (let r = 0; r < rings; r++) {
-        for (let s = 0; s < segments; s++) {
-          const currentRadius = (r / rings) * radius;
-          const nextRadius = ((r + 1) / rings) * radius;
-          const angle1 = (s / segments) * Math.PI * 2;
-          const angle2 = ((s + 1) / segments) * Math.PI * 2;
+    const noise3D = (x: number, y: number, z: number, t: number): number => {
+      return (
+        Math.sin(x * 0.1 + t * 0.15) *
+        Math.cos(y * 0.1 + Math.sin(z * 0.1) + t * 0.1) *
+        Math.sin(z * 0.1 + Math.sin(x * 0.1) + t * 0.2)
+      );
+    };
 
-          const y1 = -currentRadius * currentRadius * 0.1;
-          const y2 = -nextRadius * nextRadius * 0.1;
+    const generateVertices = (time: number): Vertex[] => {
+      if (cachedVertices && time - lastCacheTime < cacheLifetime) {
+        return cachedVertices;
+      }
 
-          if (r < rings - 1) {
-            dishVertices.push(
-              Math.cos(angle1) * currentRadius, y1, Math.sin(angle1) * currentRadius,
-              Math.cos(angle1) * nextRadius, y2, Math.sin(angle1) * nextRadius
-            );
-          }
+      const vertices: Vertex[] = [];
+      const resolution = baseForm.resolution;
+      const breathingFactor = Math.sin(time * 0.2) * 5;
+      const majorRadius = baseForm.majorRadius + breathingFactor;
+      const minorRadius = baseForm.minorRadius + breathingFactor * 0.2;
 
-          dishVertices.push(
-            Math.cos(angle1) * currentRadius, y1, Math.sin(angle1) * currentRadius,
-            Math.cos(angle2) * currentRadius, y1, Math.sin(angle2) * currentRadius
-          );
+      for (let i = 0; i < resolution; i++) {
+        const theta = (i / resolution) * Math.PI * 2;
+
+        for (let j = 0; j < resolution; j++) {
+          const phi = (j / resolution) * Math.PI * 2;
+
+          const x = (majorRadius + minorRadius * Math.cos(phi)) * Math.cos(theta);
+          const y = (majorRadius + minorRadius * Math.cos(phi)) * Math.sin(theta);
+          const z = minorRadius * Math.sin(phi);
+
+          const noiseScale = 0.02 * baseForm.complexity;
+          const timeFactor = time * 0.2;
+          const noise =
+            15 * noise3D(x * noiseScale, y * noiseScale, z * noiseScale, timeFactor) +
+            7 * noise3D(x * noiseScale * 2, y * noiseScale * 2, z * noiseScale * 2, timeFactor * 1.3);
+
+          const normalX = x / majorRadius;
+          const normalY = y / majorRadius;
+          const normalZ = z / minorRadius;
+          const normalLength = Math.sqrt(normalX ** 2 + normalY ** 2 + normalZ ** 2) || 0.001;
+
+          const deformedX = x + (normalX / normalLength) * noise;
+          const deformedY = y + (normalY / normalLength) * noise;
+          const deformedZ = z + (normalZ / normalLength) * noise;
+
+          const tangent1X = -Math.sin(theta);
+          const tangent1Y = Math.cos(theta);
+          const tangent1Z = 0;
+
+          const tangent2X = -Math.cos(theta) * Math.sin(phi);
+          const tangent2Y = -Math.sin(theta) * Math.sin(phi);
+          const tangent2Z = Math.cos(phi);
+
+          vertices.push({
+            position: { x: deformedX, y: deformedY, z: deformedZ },
+            normal: { x: normalX / normalLength, y: normalY / normalLength, z: normalZ / normalLength },
+            tangent1: { x: tangent1X, y: tangent1Y, z: tangent1Z },
+            tangent2: { x: tangent2X, y: tangent2Y, z: tangent2Z },
+            theta,
+            phi,
+            hatchingIntensity:
+              0.3 + 0.7 * Math.abs(noise3D(deformedX * 0.03, deformedY * 0.03, deformedZ * 0.03, time * 0.5)),
+          });
         }
       }
 
-      dishGeometry.setAttribute('position', new THREE.Float32BufferAttribute(dishVertices, 3));
-      group.add(new THREE.LineSegments(dishGeometry, material));
-
-      const armGeometry = new THREE.BufferGeometry();
-      const armVertices: number[] = [];
-      armVertices.push(
-        0, 0, 0, 0, -2, -4,
-        0, -2, -4, -0.5, -2, -4,
-        0, -2, -4, 0.5, -2, -4
-      );
-      armGeometry.setAttribute('position', new THREE.Float32BufferAttribute(armVertices, 3));
-      group.add(new THREE.LineSegments(armGeometry, material));
-
-      const lnbGeometry = new THREE.BufferGeometry();
-      const lnbVertices: number[] = [];
-      const lnbSize = 0.3;
-      lnbVertices.push(
-        -lnbSize, -2, -4 - lnbSize, lnbSize, -2, -4 - lnbSize,
-        lnbSize, -2, -4 - lnbSize, lnbSize, -2, -4 + lnbSize,
-        lnbSize, -2, -4 + lnbSize, -lnbSize, -2, -4 + lnbSize,
-        -lnbSize, -2, -4 + lnbSize, -lnbSize, -2, -4 - lnbSize,
-
-        -lnbSize, -2 - lnbSize, -4 - lnbSize, lnbSize, -2 - lnbSize, -4 - lnbSize,
-        lnbSize, -2 - lnbSize, -4 - lnbSize, lnbSize, -2 - lnbSize, -4 + lnbSize,
-        lnbSize, -2 - lnbSize, -4 + lnbSize, -lnbSize, -2 - lnbSize, -4 + lnbSize,
-        -lnbSize, -2 - lnbSize, -4 + lnbSize, -lnbSize, -2 - lnbSize, -4 - lnbSize,
-
-        -lnbSize, -2, -4 - lnbSize, -lnbSize, -2 - lnbSize, -4 - lnbSize,
-        lnbSize, -2, -4 - lnbSize, lnbSize, -2 - lnbSize, -4 - lnbSize,
-        lnbSize, -2, -4 + lnbSize, lnbSize, -2 - lnbSize, -4 + lnbSize,
-        -lnbSize, -2, -4 + lnbSize, -lnbSize, -2 - lnbSize, -4 + lnbSize
-      );
-      lnbGeometry.setAttribute('position', new THREE.Float32BufferAttribute(lnbVertices, 3));
-      group.add(new THREE.LineSegments(lnbGeometry, material));
-
-      const poleGeometry = new THREE.BufferGeometry();
-      const poleVertices: number[] = [];
-      poleVertices.push(0, 0, 0, 0, -8, 0);
-
-      for (let i = 0; i < 8; i++) {
-        const angle = (i / 8) * Math.PI * 2;
-        const nextAngle = ((i + 1) / 8) * Math.PI * 2;
-        poleVertices.push(
-          Math.cos(angle) * 2, -8, Math.sin(angle) * 2,
-          Math.cos(nextAngle) * 2, -8, Math.sin(nextAngle) * 2,
-          0, -8, 0,
-          Math.cos(angle) * 2, -8, Math.sin(angle) * 2
-        );
-      }
-
-      poleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(poleVertices, 3));
-      group.add(new THREE.LineSegments(poleGeometry, material));
-
-      return group;
+      cachedVertices = vertices;
+      lastCacheTime = time;
+      return vertices;
     };
 
-    const satelliteDish = createSatelliteDish();
-    scene.add(satelliteDish);
+    const project = (point: Vector3, time: number) => {
+      const rotX = time * 0.05;
+      const rotY = time * 0.075;
 
-    camera.position.set(12, 5, 12);
-    camera.lookAt(0, -2, 0);
+      const cosX = Math.cos(rotX);
+      const sinX = Math.sin(rotX);
+      const cosY = Math.cos(rotY);
+      const sinY = Math.sin(rotY);
 
-    let frameId: number;
-    const animate = () => {
-      frameId = requestAnimationFrame(animate);
-      satelliteDish.rotation.y += 0.002;
-      renderer.render(scene, camera);
+      const y1 = point.y;
+      const z1 = point.z * cosX - point.x * sinX;
+      const x1 = point.z * sinX + point.x * cosX;
+
+      const y2 = y1 * cosY - z1 * sinY;
+      const z2 = y1 * sinY + z1 * cosY;
+      const x2 = x1;
+
+      const scale = 1.5;
+      return { x: centerX + x2 * scale, y: centerY + y2 * scale, z: z2 };
     };
-    animate();
 
-    const handleResize = () => {
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
-    };
-    window.addEventListener('resize', handleResize);
+    const calculateVisibility = (projectedVertices: ProjectedVertex[]) => {
+      const bufferSize = 200;
+      const zBuffer = Array.from({ length: bufferSize }, () => Array(bufferSize).fill(-Infinity));
+      const visible = new Array(projectedVertices.length).fill(false);
 
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(frameId);
-      renderer.dispose();
-      if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
-      scene.traverse((object) => {
-        if ((object as THREE.Mesh).geometry) (object as THREE.Mesh).geometry.dispose();
-        if ((object as THREE.Mesh).material) {
-          const mat = (object as THREE.Mesh).material;
-          if (Array.isArray(mat)) mat.forEach(m => m.dispose());
-          else mat.dispose();
+      const toBufferCoords = (x: number, y: number) => ({
+        bx: Math.floor((x / width) * bufferSize),
+        by: Math.floor((y / height) * bufferSize),
+      });
+
+      projectedVertices.forEach((vertex, index) => {
+        const { bx, by } = toBufferCoords(vertex.x, vertex.y);
+        if (bx >= 0 && bx < bufferSize && by >= 0 && by < bufferSize) {
+          if (vertex.z > zBuffer[by][bx]) {
+            zBuffer[by][bx] = vertex.z;
+            visible[index] = true;
+          }
         }
       });
+
+      return visible;
+    };
+
+    const generateHatchingLines = (vertices: Vertex[], time: number) => {
+      const projectedVertices: ProjectedVertex[] = vertices.map((v) => {
+        const projection = project(v.position, time);
+        return { ...projection, vertex: v };
+      });
+
+      const isVisible = calculateVisibility(projectedVertices);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, width, height);
+
+      projectedVertices.forEach((p, i) => {
+        if (!isVisible[i]) return;
+
+        const intensity = p.vertex.hatchingIntensity;
+        ctx.strokeStyle = `rgba(0,0,0,${intensity})`;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + p.vertex.tangent1.x * 5, p.y + p.vertex.tangent1.y * 5);
+        ctx.stroke();
+      });
+    };
+
+    const animate = () => {
+      time += timeStep;
+      const vertices = generateVertices(time);
+      generateHatchingLines(vertices, time);
+      requestRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      ctx.clearRect(0, 0, width, height);
+      cachedVertices = null;
     };
   }, []);
 
   return (
-<div
-    ref={mountRef}
-    style={{
-    margin: "50px auto",
-    background: '#FFFFFF',
-    overflow: 'hidden',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '550px',
-    width: '550px',
-    border: "1px solid #ccc",
-    borderRadius: "10px"
-    }}
-/>
+    <div
+      style={{
+        margin: "50px auto",
+        background: "#FFFFFF",
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "600px",
+        width: "600px",
+        border: "1px solid #ccc",
+        borderRadius: "10px",
+        position: "relative",
+      }}
+    >
+      <canvas ref={canvasRef} width={550} height={550} />
+    </div>
   );
 };
 
