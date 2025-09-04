@@ -11,6 +11,9 @@ import Seventhascii from "@/components/BinaryArts/7";
 import Eightascii from "@/components/BinaryArts/8";
 import Nineascii from "@/components/BinaryArts/9";
 import Tenthascii from "@/components/BinaryArts/10";
+import elevenascii from "@/components/BinaryArts/11";
+import tweleveascii from "@/components/BinaryArts/12";
+import thirdteenascii from "@/components/BinaryArts/13";
 
 const components = [
   Oneascii,
@@ -22,7 +25,10 @@ const components = [
   Seventhascii,
   Eightascii,
   Nineascii,
-  Tenthascii
+  Tenthascii,
+  elevenascii,
+  tweleveascii,
+  thirdteenascii
 ];
 
 export default function AsciiArtPage() {
