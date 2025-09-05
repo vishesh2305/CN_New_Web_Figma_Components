@@ -1,22 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Highlight } from "prism-react-renderer";
-
-const vsCodeDark = {
-  plain: { color: "#d4d4d4", backgroundColor: "transparent" },
-  styles: [
-    { types: ["comment"], style: { color: "#6a9955", fontStyle: "italic" as const } },
-    { types: ["string"], style: { color: "#ce9178" } },
-    { types: ["keyword"], style: { color: "#569cd6" } },
-    { types: ["function"], style: { color: "#dcdcaa" } },
-    { types: ["variable"], style: { color: "#9cdcfe" } },
-    { types: ["number"], style: { color: "#b5cea8" } },
-    { types: ["punctuation"], style: { color: "#d4d4d4" } },
-    { types: ["operator"], style: { color: "#d4d4d4" } },
-    { types: ["constant"], style: { color: "#4fc1ff" } },
-  ],
-};
+import Editor from "@monaco-editor/react";
+import { X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 type CodeBoxProps = {
   title: string;
@@ -24,60 +10,89 @@ type CodeBoxProps = {
   code: string;
   caption: string;
   files: string[];
+  hoverText?: string;
+  AsciiArtComponent?: React.FC;
 };
 
-export default function CodeBox({ title, filename, code, caption, files }: CodeBoxProps) {
-  const [hovered, setHovered] = useState(false);
-  const [typedCode, setTypedCode] = useState(code || ""); // default to full code so no empty renders
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  const lines = code.split("\n");
-  const charDelay = 30;
-  const lineDelay = 200;
+export default function CodeBox({
+  title,
+  filename,
+  code,
+  caption,
+  files,
+  hoverText = "Hovering over code!",
+  AsciiArtComponent,
+}: CodeBoxProps) {
+  const [activeFile, setActiveFile] = useState<string | null>(filename);
+  const [openFiles, setOpenFiles] = useState<string[]>([filename]);
+  const [fileContents, setFileContents] = useState<{ [key: string]: string }>({});
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    setIsLoaded(true);
-  }, []);
+    const initialContents: { [key: string]: string } = {};
+    initialContents[filename] = code;
+    files.forEach((f) => {
+      if (f !== filename) {
+        initialContents[f] = `// Code for ${f}\n`;
+      }
+    });
+    setFileContents(initialContents);
+    setActiveFile(filename);
+    setOpenFiles([filename]);
+  }, [code, filename, files]);
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (hovered) {
-      setTypedCode(""); // start empty for typing effect
-      let currentLine = 0;
-      let currentChar = 0;
-      const type = () => {
-        if (currentLine < lines.length) {
-          if (currentChar < lines[currentLine].length) {
-            setTypedCode((prev) => (prev ?? "") + lines[currentLine][currentChar]); // always fallback to ""
-            currentChar++;
-            timer = setTimeout(type, charDelay);
-          } else {
-            setTypedCode((prev) => (prev ?? "") + "\n");
-            currentLine++;
-            currentChar = 0;
-            timer = setTimeout(type, lineDelay);
-          }
-        }
-      };
-      type();
-    } else {
-      setTypedCode(code); // reset full code when hover ends
+  const handleFileSelect = (file: string) => {
+    if (!openFiles.includes(file)) {
+      setOpenFiles([...openFiles, file]);
     }
-    return () => clearTimeout(timer);
-  }, [hovered, code]);
+    setActiveFile(file);
+  };
 
-  // Safe code for rendering line numbers even when typedCode is empty
-  const linesToShow = (typedCode || "").split("\n");
+  const handleCloseFile = (fileToClose: string) => {
+    const newOpenFiles = openFiles.filter((f) => f !== fileToClose);
+    if (activeFile === fileToClose) {
+      setActiveFile(newOpenFiles[newOpenFiles.length - 1] || null);
+    }
+    setOpenFiles(newOpenFiles);
+  };
+
+  const activeCode = activeFile ? fileContents[activeFile] : "";
+
+  // const generateSrcDoc = (code: string) => {
+  //   const sanitized = code.replace(/<\/script>/g, "<\\/script>");
+  //   return `
+  //     <html>
+  //       <head>
+  //         <style>
+  //           body { font-family: monospace; color: #0f0; background: transparent; padding: 1rem; }
+  //         </style>
+  //       </head>
+  //       <body>
+  //         <script>
+  //           try {
+  //             console.clear();
+  //             const output = [];
+  //             console.log = (...args) => output.push(args.join(' '));
+  //             ${sanitized}
+  //             document.body.innerHTML = output.map(o => '<div>' + o + '</div>').join('');
+  //           } catch(e) {
+  //             document.body.innerHTML = '<div style="color:red;">' + e + '</div>';
+  //           }
+  //         <\/script>
+  //       </body>
+  //     </html>
+  //   `;
+  // };
 
   return (
     <motion.div
-      className="bg-[#1e1e1e] border border-[#3c3c3c] rounded-lg shadow-2xl text-white flex flex-col h-full overflow-hidden"
+      className="bg-[#1e1e1e] border border-[#3c3c3c] rounded-lg shadow-2xl text-white flex flex-col h-full overflow-hidden relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       whileHover={{ scale: 1.01 }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       {/* Top Bar */}
-      <div className="flex items-center justify-between bg-[#2d2d30] px-3 py-2 border-b border-[#3c3c3c]">
+      <div className="flex items-center justify-between bg-[#2d2d30] px-3 py-2 border-b border-[#3c3c3c] z-10 relative">
         <div className="flex items-center gap-2 text-sm">
           <div className="flex gap-1.5">
             <div className="w-3 h-3 bg-[#ff5f57] rounded-full"></div>
@@ -89,13 +104,17 @@ export default function CodeBox({ title, filename, code, caption, files }: CodeB
       </div>
 
       {/* File Explorer + Code Editor */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {files.length > 0 && (
-          <div className="w-64 bg-[#252526] border-r border-[#3c3c3c] p-2">
+          <div className="w-64 bg-[#252526] border-r border-[#3c3c3c] p-2 z-10 relative">
             <div className="text-[#cccccc] text-xs font-medium mb-2 px-2">Files</div>
             <div className="space-y-0.5">
               {files.map((file, idx) => (
-                <div key={idx} className="text-xs text-[#cccccc] hover:bg-[#2a2d2e] px-2 py-1 rounded cursor-pointer truncate">
+                <div
+                  key={idx}
+                  onClick={() => handleFileSelect(file)}
+                  className={`text-xs text-[#cccccc] px-2 py-1 rounded cursor-pointer truncate ${activeFile === file ? "bg-[#2a2d2e]" : "hover:bg-[#2a2d2e]"}`}
+                >
                   📄 {file}
                 </div>
               ))}
@@ -104,84 +123,85 @@ export default function CodeBox({ title, filename, code, caption, files }: CodeB
         )}
 
         {/* Editor Area */}
-        <div className="flex-1 flex flex-col">
-          <div className="bg-[#2d2d30] border-b border-[#3c3c3c] px-4 py-2">
-            <div className="inline-flex items-center bg-[#1e1e1e] px-3 py-1 rounded-t text-xs text-[#cccccc] border-t-2 border-[#0078d4]">
-              📄 {filename}
-              <span className="ml-2 text-[#858585]">×</span>
-            </div>
+        <div className="flex-1 flex flex-col relative z-10">
+          {/* File Tabs */}
+          <div className="bg-[#2d2d30] border-b border-[#3c3c3c] flex z-10 relative">
+            {openFiles.map((file) => (
+              <div
+                key={file}
+                onClick={() => setActiveFile(file)}
+                className={`flex items-center cursor-pointer px-3 py-1.5 text-xs ${activeFile === file ? "bg-[#1e1e1e] text-[#cccccc] border-t-2 border-[#0078d4]" : "text-[#858585]"}`}
+              >
+                <span>📄 {file}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCloseFile(file);
+                  }}
+                  className="ml-2 text-[#858585] hover:text-white rounded-full hover:bg-white/10 p-0.5"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
           </div>
 
-          <div className="flex flex-1 overflow-hidden">
-            {/* Line Numbers */}
-            <div className="bg-[#1e1e1e] px-3 py-3 text-[#858585] text-sm font-mono border-r border-[#3c3c3c] min-w-[40px] text-right">
-              {linesToShow.map((_, i) => (
-                <div key={i} className="leading-6">
-                  {i + 1}
-                </div>
-              ))}
-            </div>
-
-            {/* Code Content */}
-            <div className="flex-1 p-3 font-mono text-sm overflow-auto">
-              <Highlight code={typedCode || ""} language="javascript" theme={vsCodeDark}>
-                {({ style, tokens, getLineProps, getTokenProps }) => (
-                  <pre style={{ ...style, background: "transparent", margin: 0 }}>
-                    {tokens.map((line, i) => (
-                      <div key={i} {...getLineProps({ line })} className="leading-6">
-                        {line.map((token, key) => {
-                        const safeToken = { ...token, content: token.content || "" }; // fallback to empty string
-                        return <span key={key} {...getTokenProps({ token: safeToken })} />;
-                      })}
-                      </div>
-                    ))}
-                  </pre>
-                )}
-              </Highlight>
-            </div>
+          {/* Code Editor */}
+          <div className="flex-1 font-mono text-sm relative">
+            {activeFile ? (
+              <Editor
+                height="100%"
+                language="javascript"
+                theme="vs-dark"
+                value={activeCode}
+                onChange={(value) =>
+                  setFileContents({ ...fileContents, [activeFile]: value || "" })
+                }
+                options={{
+                  minimap: { enabled: false },
+                  scrollbar: { vertical: "hidden", horizontal: "hidden" },
+                  scrollBeyondLastLine: false,
+                  fontSize: 14,
+                  wordWrap: "on",
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                Select a file to start editing
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Hover Blur Overlay */}
+<AnimatePresence>
+  {isHovered && AsciiArtComponent && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+      className="absolute inset-0 bg-black/50 backdrop-blur-lg flex items-center justify-center pointer-events-none z-20 rounded-lg"
+    >
+      <div className="transform scale-[0.5] pointer-events-auto">
+        <AsciiArtComponent />
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
       </div>
 
       {/* Bottom Status Bar */}
       <motion.div
         className="bg-[#42a5f5] text-white text-xs px-4 py-2.5 flex items-center justify-between border-t border-[#1976d2] relative z-10"
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: isLoaded ? 1 : 0 }}
-        transition={{ delay: 0.8, duration: 0.4 }}
         whileHover={{ backgroundColor: "#1976d2" }}
       >
-        <div className="flex items-center gap-6">
-          <motion.span
-            className="font-medium"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1, duration: 0.3 }}
-          >
-            {caption}
-          </motion.span>
-          {hovered && (
-            <motion.span
-              className="text-[#e3f2fd] opacity-90"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              ⌘K to ask AI
-            </motion.span>
-          )}
-        </div>
-        <motion.div
-          className="flex items-center gap-4 text-[#e3f2fd] opacity-75"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.75 }}
-          transition={{ delay: 1.2, duration: 0.3 }}
-        >
+        <span className="font-medium">{caption}</span>
+        <div className="flex items-center gap-4 text-[#e3f2fd] opacity-75">
           <span>JavaScript</span>
           <span>UTF-8</span>
           <span>LF</span>
-        </motion.div>
+        </div>
       </motion.div>
     </motion.div>
   );
