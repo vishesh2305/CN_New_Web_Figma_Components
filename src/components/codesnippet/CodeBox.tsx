@@ -6,7 +6,7 @@ import { Highlight } from "prism-react-renderer";
 const vsCodeDark = {
   plain: { color: "#d4d4d4", backgroundColor: "transparent" },
   styles: [
-    { types: ["comment"], style: { color: "#6a9955", fontStyle: "italic" } },
+    { types: ["comment"], style: { color: "#6a9955", fontStyle: "italic" as const } },
     { types: ["string"], style: { color: "#ce9178" } },
     { types: ["keyword"], style: { color: "#569cd6" } },
     { types: ["function"], style: { color: "#dcdcaa" } },
