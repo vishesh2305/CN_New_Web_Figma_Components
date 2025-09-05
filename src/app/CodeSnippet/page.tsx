@@ -5,7 +5,7 @@ import Sixteenthascii from "@/components/BinaryArts/16";
 import Seventeenthascii from "@/components/BinaryArts/17";
 
 export default function Code() {
-    const asciiArtComponents = [Fourteenthascii, Fifteenthascii, Sixteenthascii, Seventeenthascii];
+    // const asciiArtComponents = [Fourteenthascii, Fifteenthascii, Sixteenthascii, Seventeenthascii];
   const codeSnippets = [
     {
       title: "Binary Storm",
@@ -654,7 +654,7 @@ export default Seventeenthascii;`,
     caption={snippet.caption}
     files={snippet.files}
     hoverText="Hovering over code!"
-    AsciiArtComponent={asciiArtComponents[i % asciiArtComponents.length]} 
+    // AsciiArtComponent={asciiArtComponents[i % asciiArtComponents.length]} 
   />
 ))}
       </div>
