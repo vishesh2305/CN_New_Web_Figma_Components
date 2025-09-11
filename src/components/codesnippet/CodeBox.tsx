@@ -25,8 +25,48 @@ export default function CodeBox({
 }: CodeBoxProps) {
   const [activeFile, setActiveFile] = useState<string | null>(filename);
   const [openFiles, setOpenFiles] = useState<string[]>([filename]);
-  const [fileContents, setFileContents] = useState<{ [key: string]: string }>({});
+  const [fileContents, setFileContents] = useState<{ [key: string]: string }>(
+    {}
+  );
   const [isHovered, setIsHovered] = useState(false);
+  
+  // States to manage the animation
+  const [isMonochrome, setIsMonochrome] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [displayedCode, setDisplayedCode] = useState("");
+
+  // Handles the Tab key press to start the animation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab" && isMonochrome) {
+        event.preventDefault();
+        setIsMonochrome(false);
+        setIsTyping(true);
+        setDisplayedCode(""); // Reset for typing
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMonochrome]);
+
+  // Handles the typewriter effect
+  useEffect(() => {
+    if (isTyping) {
+      let i = 0;
+      const intervalId = setInterval(() => {
+        setDisplayedCode(code.substring(0, i));
+        i++;
+        if (i > code.length) {
+          clearInterval(intervalId);
+          setIsTyping(false);
+        }
+      }, 10); // Adjust typing speed here (lower is faster)
+      return () => clearInterval(intervalId);
+    }
+  }, [isTyping, code]);
+
 
   useEffect(() => {
     const initialContents: { [key: string]: string } = {};
@@ -56,34 +96,6 @@ export default function CodeBox({
     setOpenFiles(newOpenFiles);
   };
 
-  const activeCode = activeFile ? fileContents[activeFile] : "";
-
-  // const generateSrcDoc = (code: string) => {
-  //   const sanitized = code.replace(/<\/script>/g, "<\\/script>");
-  //   return `
-  //     <html>
-  //       <head>
-  //         <style>
-  //           body { font-family: monospace; color: #0f0; background: transparent; padding: 1rem; }
-  //         </style>
-  //       </head>
-  //       <body>
-  //         <script>
-  //           try {
-  //             console.clear();
-  //             const output = [];
-  //             console.log = (...args) => output.push(args.join(' '));
-  //             ${sanitized}
-  //             document.body.innerHTML = output.map(o => '<div>' + o + '</div>').join('');
-  //           } catch(e) {
-  //             document.body.innerHTML = '<div style="color:red;">' + e + '</div>';
-  //           }
-  //         <\/script>
-  //       </body>
-  //     </html>
-  //   `;
-  // };
-
   return (
     <motion.div
       className="bg-[#1e1e1e] border border-[#3c3c3c] rounded-lg shadow-2xl text-white flex flex-col h-full overflow-hidden relative"
@@ -91,7 +103,6 @@ export default function CodeBox({
       onMouseLeave={() => setIsHovered(false)}
       whileHover={{ scale: 1.01 }}
     >
-      {/* Top Bar */}
       <div className="flex items-center justify-between bg-[#2d2d30] px-3 py-2 border-b border-[#3c3c3c] z-10 relative">
         <div className="flex items-center gap-2 text-sm">
           <div className="flex gap-1.5">
@@ -103,17 +114,22 @@ export default function CodeBox({
         </div>
       </div>
 
-      {/* File Explorer + Code Editor */}
       <div className="flex flex-1 overflow-hidden relative">
         {files.length > 0 && (
           <div className="w-64 bg-[#252526] border-r border-[#3c3c3c] p-2 z-10 relative">
-            <div className="text-[#cccccc] text-xs font-medium mb-2 px-2">Files</div>
+            <div className="text-[#cccccc] text-xs font-medium mb-2 px-2">
+              Files
+            </div>
             <div className="space-y-0.5">
               {files.map((file, idx) => (
                 <div
                   key={idx}
                   onClick={() => handleFileSelect(file)}
-                  className={`text-xs text-[#cccccc] px-2 py-1 rounded cursor-pointer truncate ${activeFile === file ? "bg-[#2a2d2e]" : "hover:bg-[#2a2d2e]"}`}
+                  className={`text-xs text-[#cccccc] px-2 py-1 rounded cursor-pointer truncate ${
+                    activeFile === file
+                      ? "bg-[#2a2d2e]"
+                      : "hover:bg-[#2a2d2e]"
+                  }`}
                 >
                   📄 {file}
                 </div>
@@ -122,15 +138,17 @@ export default function CodeBox({
           </div>
         )}
 
-        {/* Editor Area */}
         <div className="flex-1 flex flex-col relative z-10">
-          {/* File Tabs */}
           <div className="bg-[#2d2d30] border-b border-[#3c3c3c] flex z-10 relative">
             {openFiles.map((file) => (
               <div
                 key={file}
                 onClick={() => setActiveFile(file)}
-                className={`flex items-center cursor-pointer px-3 py-1.5 text-xs ${activeFile === file ? "bg-[#1e1e1e] text-[#cccccc] border-t-2 border-[#0078d4]" : "text-[#858585]"}`}
+                className={`flex items-center cursor-pointer px-3 py-1.5 text-xs ${
+                  activeFile === file
+                    ? "bg-[#1e1e1e] text-[#cccccc] border-t-2 border-[#0078d4]"
+                    : "text-[#858585]"
+                }`}
               >
                 <span>📄 {file}</span>
                 <button
@@ -146,23 +164,36 @@ export default function CodeBox({
             ))}
           </div>
 
-          {/* Code Editor */}
           <div className="flex-1 font-mono text-sm relative">
             {activeFile ? (
               <Editor
                 height="100%"
                 language="javascript"
-                theme="vs-dark"
-                value={activeCode}
-                onChange={(value) =>
-                  setFileContents({ ...fileContents, [activeFile]: value || "" })
-                }
+                theme={isMonochrome ? "grayscale-theme" : "vs-dark"}
+                value={isTyping ? displayedCode : code}
+                onMount={(editor, monaco) => {
+                  monaco.editor.defineTheme("grayscale-theme", {
+                    base: "vs-dark",
+                    inherit: true,
+                    rules: [{ token: "", foreground: "c0c0c0" }],
+                    colors: {
+                      "editor.background": "#1e1e1e",
+                      "editor.foreground": "#c0c0c0",
+                      "editorCursor.foreground": "#ffffff",
+                      "editor.lineHighlightBackground": "#2d2d30",
+                    },
+                  });
+                }}
                 options={{
                   minimap: { enabled: false },
-                  scrollbar: { vertical: "hidden", horizontal: "hidden" },
+                  scrollbar: {
+                    vertical: "hidden",
+                    horizontal: "hidden",
+                  },
                   scrollBeyondLastLine: false,
                   fontSize: 14,
                   wordWrap: "on",
+                  readOnly: isMonochrome || isTyping,
                 }}
               />
             ) : (
@@ -173,25 +204,23 @@ export default function CodeBox({
           </div>
         </div>
 
-        {/* Hover Blur Overlay */}
-<AnimatePresence>
-  {isHovered && AsciiArtComponent && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.4 }}
-      className="absolute inset-0 bg-black/50 backdrop-blur-lg flex items-center justify-center pointer-events-none z-20 rounded-lg"
-    >
-      <div className="transform scale-[0.5] pointer-events-auto">
-        <AsciiArtComponent />
-      </div>
-    </motion.div>
-  )}
-</AnimatePresence>
+        <AnimatePresence>
+          {isHovered && AsciiArtComponent && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-lg flex items-center justify-center pointer-events-none z-20 rounded-lg"
+            >
+              <div className="transform scale-[0.5] pointer-events-auto">
+                <AsciiArtComponent />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Bottom Status Bar */}
       <motion.div
         className="bg-[#42a5f5] text-white text-xs px-4 py-2.5 flex items-center justify-between border-t border-[#1976d2] relative z-10"
         whileHover={{ backgroundColor: "#1976d2" }}
