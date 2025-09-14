@@ -1,8 +1,5 @@
 import CodeBox from "../../components/codesnippet/CodeBox";
-import Fourteenthascii from "@/components/BinaryArts/14";
-import Fifteenthascii from "@/components/BinaryArts/15";
-import Sixteenthascii from "@/components/BinaryArts/16";
-import Seventeenthascii from "@/components/BinaryArts/17";
+
 
 export default function Code() {
     // const asciiArtComponents = [Fourteenthascii, Fifteenthascii, Sixteenthascii, Seventeenthascii];

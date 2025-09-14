@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { motion } from "framer-motion";
-import prettier from "prettier/standalone";
-import parserBabel from "prettier/parser-babel";
 
 
 const codeSteps = [
@@ -18,16 +16,16 @@ const codeSteps = [
 ];
 
 
-const formatCode = (code: string) => {
-  try {
-    return prettier.format(code, {
-      parser: "babel",
-      plugins: [parserBabel],
-    });
-  } catch {
-    return code;
-  }
-};
+// const formatCode = (code: string) => {
+//   try {
+//     return prettier.format(code, {
+//       parser: "babel",
+//       plugins: [parserBabel],
+//     });
+//   } catch {
+//     return code;
+//   }
+// };
 
 
 

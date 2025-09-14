@@ -20,7 +20,6 @@ export default function CodeBox({
   code,
   caption,
   files,
-  hoverText = "Hovering over code!",
   AsciiArtComponent,
 }: CodeBoxProps) {
   const [activeFile, setActiveFile] = useState<string | null>(filename);
